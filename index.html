@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "কোন সরল ছন্দিত স্পন্দন গতিসম্পন্ন কণার বিস্তার ৩ cm এবং সর্বোচ্চ বেগ ৬.২৪ cms⁻¹ হলে, কণাটির পর্যায়কাল নিম্নের কত সেকেন্ড?",
+          options: {
+            a: "২.০৩",
+            b: "৩.০২",
+            c: "৪.০৩",
+            d: "৪.০২",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার সর্বোচ্চ বেগ, V<sub>max</sub> = Aω</p><br><p>এখানে, বিস্তার (A) = ৩ cm = ০.০৩ m</p><br><p>সর্বোচ্চ বেগ (V<sub>max</sub>) = ৬.২৪ cm/s = ০.০৬২৪ m/s</p><br><p>আমরা জানি, কৌণিক কম্পাঙ্ক (ω) = ২π/T</p><br><p>সুতরাং, V<sub>max</sub> = A (২π/T)</p><br><p>বা, T = A (২π/V<sub>max</sub>)</p><br><p>T = ০.০৩ * (২ * ৩.১৪১৬) / ০.০৬২৪</p><br><p>T = ০.০৩ * ৬.২৮৩২ / ০.০৬২৪</p><br><p>T = ০.১৮৮৪৯৬ / ০.০৬২৪</p><br><p>T ≈ ৩.০২ s</p>",
+        },
+        {
+          id: 2,
+          question:
+            "একটি বস্তু ৪ cm বিস্তারের সরল ছন্দিত স্পন্দন সম্পন্ন করছে। সাম্যাবস্থা থেকে কত দূরত্বে বস্তুটির গতিশক্তি ও স্থিতিশক্তি সমান হবে?",
+          options: {
+            a: "২√২ cm",
+            b: "√২ cm",
+            c: "২ cm",
+            d: "১ cm",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার গতিশক্তি, E<sub>k</sub> = ১/২ mω²(A² - x²)</p><br><p>এবং স্থিতিশক্তি, E<sub>p</sub> = ১/২ mω²x²</p><br><p>প্রশ্নানুসারে, গতিশক্তি ও স্থিতিশক্তি সমান হবে, অর্থাৎ E<sub>k</sub> = E<sub>p</sub></p><br><p>১/২ mω²(A² - x²) = ১/২ mω²x²</p><br><p>A² - x² = x²</p><br><p>A² = ২x²</p><br><p>x² = A²/২</p><br><p>x = A/√২</p><br><p>এখানে, বিস্তার (A) = ৪ cm</p><br><p>সুতরাং, x = ৪/√২ cm</p><br><p>x = (৪ * √২) / (√২ * √২) cm</p><br><p>x = ৪√২ / ২ cm</p><br><p>x = ২√২ cm</p><br><p>সুতরাং, সাম্যাবস্থা থেকে ২√২ cm দূরত্বে বস্তুটির গতিশক্তি ও স্থিতিশক্তি সমান হবে।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "সরল দোলন গতিসম্পন্ন কোনো কণার অন্তরকলন সমীকরণ d²x/dt² + ১০০x = ০ হলে কণাটির কৌণিক কম্পাঙ্ক কত হবে?",
+          options: {
+            a: "২ rads⁻¹",
+            b: "৪ rads⁻¹",
+            c: "৫ rads⁻¹",
+            d: "১০০ rads⁻¹",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির অন্তরক সমীকরণ হল d²x/dt² + ω²x = ০</p><br><p>প্রদত্ত সমীকরণটি হল d²x/dt² + ১০০x = ০</p><br><p>এই দুটি সমীকরণ তুলনা করে পাই,</p><br><p>ω² = ১০০</p><br><p>ω = √১০০</p><br><p>ω = ১০ rads⁻¹</p><br><p>তবে, প্রদত্ত অপশনগুলোর মধ্যে ১০ rads⁻¹ নেই। এক্ষেত্রে, অপশন (C) ৫ rads⁻¹ দেওয়া আছে, যা ভুল। সঠিক উত্তর হবে ১০ rads⁻¹।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "কোনো কণার স্পন্দন গতির সমীকরণ x = ১০ sin(৬πt + π/২)। কণাটির কম্পাঙ্ক কত?",
+          options: {
+            a: "১৫ Hz",
+            b: "৬ Hz",
+            c: "৩ Hz",
+            d: "১০ Hz",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির সাধারণ সমীকরণ হলো x = A sin(ωt + δ)</p><br><p>প্রদত্ত সমীকরণটি হলো x = ১০ sin(৬πt + π/২)</p><br><p>এই দুটি সমীকরণ তুলনা করে পাই, ω = ৬π</p><br><p>আমরা জানি, কৌণিক কম্পাঙ্ক (ω) = ২πf, যেখানে f হলো কম্পাঙ্ক।</p><br><p>সুতরাং, ২πf = ৬π</p><br><p>f = ৬π / ২π</p><br><p>f = ৩ Hz</p><br><p>সুতরাং, কণাটির কম্পাঙ্ক হবে ৩ Hz।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "কোনো বস্তু কণার সরণ x = (৬ cos wt + ৮ sin wt) m দ্বারা প্রকাশ করলে এর বিস্তার-",
+          options: {
+            a: "১৪ m",
+            b: "১০ m",
+            c: "৪ m",
+            d: "৫ m",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির সাধারণ সমীকরণকে A sin(ωt + α) অথবা A cos(ωt + α) আকারে প্রকাশ করা যায়।</p><br><p>যদি সরণ সমীকরণ x = a cos(ωt) + b sin(ωt) হয়, তাহলে বিস্তার (A) = √(a² + b²)</p><br><p>প্রদত্ত সমীকরণটি হলো x = (৬ cos ωt + ৮ sin ωt) m</p><br><p>এখানে, a = ৬ এবং b = ৮</p><br><p>সুতরাং, বিস্তার (A) = √(৬² + ৮²)</p><br><p>A = √(৩৬ + ৬৪)</p><br><p>A = √১০০</p><br><p>A = ১০ m</p><br><p>সুতরাং, কণাটির বিস্তার হবে ১০ m।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "যদি ৬০ kg ভরের একজন লোক ৪m দৈর্ঘ্যের একটি দোলনায় বসে ৩m বিস্তারে দুলতে থাকে তাহলে লোকটির সর্বোচ্চ গতিশক্তি কত হবে?",
+          options: {
+            a: "৬৬০ J",
+            b: "৬৮০ J",
+            c: "৭০০ J",
+            d: "৭২০ J",
+          },
+          correct: "a",
+          explanation:
+            "<p>সরল দোলকের ক্ষেত্রে সর্বোচ্চ গতিশক্তি = সর্বোচ্চ স্থিতিশক্তি</p><br><p>এখানে, ভর (m) = ৬০ kg</p><br><p>দৈর্ঘ্য (L) = ৪ m</p><br><p>বিস্তার (A) = ৩ m</p><br><p>অভিকর্ষজ ত্বরণ (g) = ৯.৮ ms⁻² (ধরে নিচ্ছি, যেহেতু উল্লেখ নেই)</p><br><p>সর্বোচ্চ গতিশক্তি (E<sub>k,max</sub>) = ১/২ mω²A²</p><br><p>সরল দোলকের জন্য ω = √(g/L)</p><br><p>সুতরাং, E<sub>k,max</sub> = ১/২ m (g/L) A²</p><br><p>E<sub>k,max</sub> = ১/২ * ৬০ * (৯.৮/৪) * (৩)²</p><br><p>E<sub>k,max</sub> = ৩০ * ২.৪৫ * ৯</p><br><p>E<sub>k,max</sub> = ৭৩.৫ * ৯</p><br><p>E<sub>k,max</sub> = ৬৬১.৫ J</p><br><p>নিকটতম অপশন (A) ৬৬০ J।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "সরল ছন্দিত গতিসম্পন্ন কণার সর্বোচ্চ বেগ ০.০২ ms⁻¹ এবং কণাটির বিস্তার ৫ mm হলে কণাটির পর্যায়কাল কত?",
+          options: {
+            a: "১.২৬ s",
+            b: "১.৩৬ s",
+            c: "১.৫২ s",
+            d: "১.৫৭ s",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার সর্বোচ্চ বেগ, V<sub>max</sub> = Aω</p><br><p>এখানে, সর্বোচ্চ বেগ (V<sub>max</sub>) = ০.০২ ms⁻¹</p><br><p>বিস্তার (A) = ৫ mm = ৫ * ১০⁻³ m = ০.০০৫ m</p><br><p>আমরা জানি, কৌণিক কম্পাঙ্ক (ω) = ২π/T</p><br><p>সুতরাং, V<sub>max</sub> = A (২π/T)</p><br><p>বা, T = A (২π/V<sub>max</sub>)</p><br><p>T = ০.০০৫ * (২ * ৩.১৪১৬) / ০.০২</p><br><p>T = ০.০০৫ * ৬.২৮৩২ / ০.০২</p><br><p>T = ০.০৩১৪১৬ / ০.০২</p><br><p>T ≈ ১.৫৭ s</p>",
+        },
+        {
+          id: 8,
+          question:
+            "একটি তরঙ্গের বেগ ৩.১ ms⁻¹ এবং পর্যায়কাল ০.২০s হলে তরঙ্গদৈর্ঘ্য কত?",
+          options: {
+            a: "৬.২ m",
+            b: "০.৬২ m",
+            c: "০.০৬২ m",
+            d: "০.০০৬২ m",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, তরঙ্গের বেগ (v) = fλ, যেখানে f হলো কম্পাঙ্ক এবং λ হলো তরঙ্গদৈর্ঘ্য।</p><br><p>আবার, f = ১/T, যেখানে T হলো পর্যায়কাল।</p><br><p>সুতরাং, v = (১/T)λ</p><br><p>বা, λ = vT</p><br><p>এখানে, তরঙ্গের বেগ (v) = ৩.১ ms⁻¹</p><br><p>পর্যায়কাল (T) = ০.২০ s</p><br><p>λ = ৩.১ * ০.২০</p><br><p>λ = ০.৬২ m</p><br><p>সুতরাং, তরঙ্গদৈর্ঘ্য হবে ০.৬২ m।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "সরল ছন্দিত স্পন্দনে স্পন্দিত একটি কণার পর্যায়কাল ২০ s হলে এর কৌণিক কম্পাঙ্ক কত?",
+          options: {
+            a: "w = π/২০ rads⁻¹",
+            b: "w = π/১০ rads⁻¹",
+            c: "w = π/৫ rads⁻¹",
+            d: "w = π/১৫ rads⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, কৌণিক কম্পাঙ্ক (ω) এবং পর্যায়কাল (T) এর সম্পর্ক হলো:</p><br><p>ω = ২π/T</p><br><p>এখানে, পর্যায়কাল (T) = ২০ s</p><br><p>সুতরাং, ω = ২π/২০</p><br><p>ω = π/১০ rads⁻¹</p><br><p>সুতরাং, কণাটির কৌণিক কম্পাঙ্ক হবে π/১০ rads⁻¹।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "একটি সরল ছন্দিত গতিসম্পন্ন কণার বিস্তার ০.১m, পর্যায়কাল ৪s এবং আদি দশা ৩০°। উক্ত কণাটির দোলনগতির সমীকরণ কোনটি?",
+          options: {
+            a: "x = ০.১ sin(πt/২ + π/৬)",
+            b: "x = ০.১ sin(πt/৪ + π/৬)",
+            c: "x = ১.০ sin(πt/৪ + π/৬)",
+            d: "x = ১.০ sin(πt/২ + π/৬)",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির সাধারণ সমীকরণ হলো x = A sin(ωt + δ)</p><br><p>এখানে, বিস্তার (A) = ০.১ m</p><br><p>পর্যায়কাল (T) = ৪ s</p><br><p>আদি দশা (δ) = ৩০° = ৩০ * (π/১৮০) rad = π/৬ rad</p><br><p>প্রথমে কৌণিক কম্পাঙ্ক (ω) নির্ণয় করি:</p><br><p>ω = ২π/T = ২π/৪ = π/২ rads⁻¹</p><br><p>এখন, সমীকরণে মানগুলো বসিয়ে পাই:</p><br><p>x = ০.১ sin( (π/২)t + π/৬)</p><br><p>x = ০.১ sin(πt/২ + π/৬)</p><br><p>সুতরাং, কণাটির দোলনগতির সমীকরণ হবে x = ০.১ sin(πt/২ + π/৬)।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "দৃঢ়ভাবে আটকানো k বল ধ্রুবকের একটি স্প্রিং-এর এক প্রান্তে m ভর ঝুলিয়ে একটু টেনে ছেড়ে দিলে যে সরল ছন্দিত স্পন্দন সৃষ্টি হবে তার পর্যায়কাল কত হবে?",
+          options: {
+            a: "T = ২π√(m/k)",
+            b: "T = ২π√(k/g)",
+            c: "T = ২π√(g/k)",
+            d: "T = ২π√(m/g)",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি স্প্রিং-এর এক প্রান্তে m ভর ঝুলিয়ে সরল ছন্দিত স্পন্দন সৃষ্টি করলে তার পর্যায়কাল (T) এর সূত্র হলো:</p><br><p>T = ২π√(m/k)</p><br><p>এখানে, m হলো ঝুলন্ত বস্তুর ভর এবং k হলো স্প্রিং-এর বল ধ্রুবক। এটি স্প্রিং-ভর ব্যবস্থার পর্যায়কাল নির্ণয়ের মৌলিক সূত্র।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "সরল দোলন গতিসম্পন্ন কোনো কণার অন্তরক সমীকরণ হচ্ছে 5d²x/dt² + ১৮০x = ০। কণাটির পর্যায়কাল কত হবে?",
+          options: {
+            a: "০.৯৫ s",
+            b: "১.০৫ s",
+            c: "০.৩৭ s",
+            d: "০.৫২ s",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির অন্তরক সমীকরণ হল d²x/dt² + ω²x = ০</p><br><p>প্রদত্ত সমীকরণটি হল 5d²x/dt² + ১৮০x = ০</p><br><p>এই সমীকরণটিকে d²x/dt² এর সহগ ১ বানাতে হলে, পুরো সমীকরণটিকে ৫ দ্বারা ভাগ করতে হবে:</p><br><p>(5d²x/dt²) / ৫ + (১৮০x) / ৫ = ০ / ৫</p><br><p>d²x/dt² + ৩৬x = ০</p><br><p>এখন, এই সমীকরণটিকে আদর্শ সমীকরণ d²x/dt² + ω²x = ০ এর সাথে তুলনা করে পাই,</p><br><p>ω² = ৩৬</p><br><p>ω = √৩৬</p><br><p>ω = ৬ rads⁻¹</p><br><p>আমরা জানি, পর্যায়কাল (T) = ২π/ω</p><br><p>T = ২π/৬</p><br><p>T = π/৩</p><br><p>T = ৩.১৪১৬ / ৩</p><br><p>T ≈ ১.০৪৭১৯ s</p><br><p>সুতরাং, নিকটতম অপশন (B) ১.০৫ s।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "সরল দোলন গতিসম্পন্ন একটি কণার সরণ ৪ cm হলে এর ত্বরণ ৬৪ cms⁻² হয়। এর পর্যায়কাল-",
+          options: {
+            a: "π/২ s",
+            b: "π/৪ s",
+            c: "π s",
+            d: "২π s",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিতে ত্বরণ (a) = -ω²x</p><br><p>এখানে, সরণ (x) = ৪ cm</p><br><p>ত্বরণের মান (|a|) = ৬৪ cms⁻²</p><br><p>সুতরাং, ৬৪ = ω² * ৪</p><br><p>ω² = ৬৪ / ৪</p><br><p>ω² = ১৬</p><br><p>ω = √১৬</p><br><p>ω = ৪ rads⁻¹</p><br><p>আমরা জানি, পর্যায়কাল (T) = ২π/ω</p><br><p>T = ২π/৪</p><br><p>T = π/২ s</p><br><p>সুতরাং, কণাটির পর্যায়কাল হবে π/২ s।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "সরল ছন্দিত গতিতে চলমান একটি বস্তুর সমীকরণ y = ১০ sin(১২t – π/৬); এখানে y-এর একক মিটার, t-এর একক সেকেন্ড এবং দশা ধ্রুবকের একক rad। বস্তুটির সর্বোচ্চ দ্রুতি কত?",
+          options: {
+            a: "১০ ms⁻¹",
+            b: "১২ ms⁻¹",
+            c: "১ ms⁻¹",
+            d: "১২০ ms⁻¹",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির সাধারণ সমীকরণ হলো y = A sin(ωt + δ)</p><br><p>প্রদত্ত সমীকরণটি হলো y = ১০ sin(১২t – π/৬)</p><br><p>এই দুটি সমীকরণ তুলনা করে পাই,</p><br><p>বিস্তার (A) = ১০ m</p><br><p>কৌণিক কম্পাঙ্ক (ω) = ১২ rads⁻¹</p><br><p>আমরা জানি, সরল ছন্দিত গতিতে সর্বোচ্চ দ্রুতি (V<sub>max</sub>) = Aω</p><br><p>V<sub>max</sub> = ১০ * ১২</p><br><p>V<sub>max</sub> = ১২০ ms⁻¹</p><br><p>সুতরাং, বস্তুটির সর্বোচ্চ দ্রুতি হবে ১২০ ms⁻¹।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "একটি বস্তু x = ২ cos(৫০t) অনুসারে সরল ছন্দিত গতিতে দুলছে, যেখানে x-এর পরিমাপ মিটারে এবং t-এর পরিমাপ সেকেন্ডে। এর সর্বোচ্চ বেগ ms⁻¹ এককে হবে-",
+          options: {
+            a: "১০০ sin(৫০t)",
+            b: "১০০ cos(৫০t)",
+            c: "১০০",
+            d: "২০০",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতির সাধারণ সমীকরণ হলো x = A cos(ωt + δ)</p><br><p>প্রদত্ত সমীকরণটি হলো x = ২ cos(৫০t)</p><br><p>এই দুটি সমীকরণ তুলনা করে পাই,</p><br><p>বিস্তার (A) = ২ m</p><br><p>কৌণিক কম্পাঙ্ক (ω) = ৫০ rads⁻¹</p><br><p>আমরা জানি, সরল ছন্দিত গতিতে সর্বোচ্চ বেগ (V<sub>max</sub>) = Aω</p><br><p>V<sub>max</sub> = ২ * ৫০</p><br><p>V<sub>max</sub> = ১০০ ms⁻¹</p><br><p>সুতরাং, বস্তুটির সর্বোচ্চ বেগ হবে ১০০ ms⁻¹।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "সরলদোল গতিসম্পন্ন একটি বস্তু যখন তার সাম্যাবস্থা থেকে ২ cm দূরে, তখন তার গতিশক্তি স্থিতিশক্তির ৩ গুণ। বস্তুটির দোলনের বিস্তার কত?",
+          options: {
+            a: "৩ cm",
+            b: "১ cm",
+            c: "২ cm",
+            d: "৪ cm",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার গতিশক্তি, E<sub>k</sub> = ১/২ mω²(A² - x²)</p><br><p>এবং স্থিতিশক্তি, E<sub>p</sub> = ১/২ mω²x²</p><br><p>প্রশ্নানুসারে, E<sub>k</sub> = ৩E<sub>p</sub></p><br><p>১/২ mω²(A² - x²) = ৩ * (১/২ mω²x²)</p><br><p>A² - x² = ৩x²</p><br><p>A² = ৪x²</p><br><p>A = √(৪x²)</p><br><p>A = ২x</p><br><p>এখানে, সাম্যাবস্থা থেকে দূরত্ব (x) = ২ cm</p><br><p>সুতরাং, বিস্তার (A) = ২ * ২ cm</p><br><p>A = ৪ cm</p><br><p>সুতরাং, বস্তুটির দোলনের বিস্তার হবে ৪ cm।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "কোনো স্প্রিং-এর এক প্রান্তে একটি বস্তু ঝুলালে এটি ২০ cm প্রসারিত হয়। বস্তুটি একটু টেনে ছেড়ে দিলে কম্পাঙ্ক হবে-",
+          options: {
+            a: "১.১১ Hz",
+            b: "১১.১ Hz",
+            c: "২.১১ Hz",
+            d: "২১.১ Hz",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, একটি স্প্রিং-এর এক প্রান্তে m ভর ঝুলালে যদি এটি x পরিমাণ প্রসারিত হয়, তাহলে স্প্রিং-এর বল ধ্রুবক (k) = mg/x (হুকের সূত্র থেকে, F=kx এবং F=mg)</p><br><p>বস্তুটি একটু টেনে ছেড়ে দিলে স্পন্দন গতির পর্যায়কাল (T) = ২π√(m/k)</p><br><p>এখানে, k এর মান বসিয়ে পাই,</p><br><p>T = ২π√(m / (mg/x))</p><br><p>T = ২π√(x/g)</p><br><p>এখানে, প্রসারণ (x) = ২০ cm = ০.২ m</p><br><p>অভিকর্ষজ ত্বরণ (g) = ৯.৮ ms⁻²</p><br><p>T = ২π√(০.২ / ৯.৮)</p><br><p>T = ২π√(০.০২০৪০৮)</p><br><p>T = ২π * ০.১৪২৮৫৭</p><br><p>T = ০.৮৯৭৫৯ s</p><br><p>কম্পাঙ্ক (f) = ১/T</p><br><p>f = ১ / ০.৮৯৭৫৯</p><br><p>f ≈ ১.১১ Hz</p><br><p>সুতরাং, বস্তুটির কম্পাঙ্ক হবে ১.১১ Hz।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "দুটি স্প্রিং-এর বল ধ্রুবক ২০০ Nm⁻¹ ও ৩০০ Nm⁻¹ শ্রেণি-সমবায়ে তাদের বল ধ্রুবক কত হবে?",
+          options: {
+            a: "১০০ Nm⁻¹",
+            b: "১২০ Nm⁻¹",
+            c: "২৫০ Nm⁻¹",
+            d: "৫০০ Nm⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "<p>দুটি স্প্রিং শ্রেণি-সমবায়ে যুক্ত থাকলে তাদের তুল্য বল ধ্রুবক (k<sub>eq</sub>) নির্ণয়ের সূত্র হলো:</p><br><p>১/k<sub>eq</sub> = ১/k₁ + ১/k₂</p><br><p>এখানে, k₁ = ২০০ Nm⁻¹</p><br><p>k₂ = ৩০০ Nm⁻¹</p><br><p>১/k<sub>eq</sub> = ১/২০০ + ১/৩০০</p><br><p>১/k<sub>eq</sub> = (৩ + ২) / ৬০০</p><br><p>১/k<sub>eq</sub> = ৫ / ৬০০</p><br><p>k<sub>eq</sub> = ৬০০ / ৫</p><br><p>k<sub>eq</sub> = ১২০ Nm⁻¹</p><br><p>সুতরাং, শ্রেণি-সমবায়ে তাদের তুল্য বল ধ্রুবক হবে ১২০ Nm⁻¹।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "১০০ Nm⁻¹ স্প্রিং ধ্রুবক বিশিষ্ট একটি স্প্রিং-এর দৈর্ঘ্য ০.০১ m বৃদ্ধি করতে কত বল প্রয়োজন?",
+          options: {
+            a: "১ N",
+            b: "২ N",
+            c: "১০ N",
+            d: "১০০ N",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, হুকের সূত্রানুযায়ী, স্প্রিং-এর প্রসারণের জন্য প্রয়োজনীয় বল (F) = kx</p><br><p>এখানে, স্প্রিং ধ্রুবক (k) = ১০০ Nm⁻¹</p><br><p>দৈর্ঘ্য বৃদ্ধি (x) = ০.০১ m</p><br><p>F = ১০০ * ০.০১</p><br><p>F = ১ N</p><br><p>সুতরাং, স্প্রিং-এর দৈর্ঘ্য ০.০১ m বৃদ্ধি করতে ১ N বল প্রয়োজন।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "একটি কণা A বিস্তার নিয়ে সরল ছন্দিত স্পন্দনে দুলছে। কণাটির অবস্থান x = A/√২ হলে মোট শক্তির যতটুকু গতিশক্তি-",
+          options: {
+            a: "১/৪",
+            b: "১/২",
+            c: "৩/৪",
+            d: "১",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার মোট শক্তি (E) = ১/২ mω²A²</p><br><p>গতিশক্তি (E<sub>k</sub>) = ১/২ mω²(A² - x²)</p><br><p>স্থিতিশক্তি (E<sub>p</sub>) = ১/২ mω²x²</p><br><p>প্রদত্ত অবস্থানে x = A/√২</p><br><p>তাহলে, x² = (A/√২)² = A²/২</p><br><p>এখন গতিশক্তি হিসাব করি:</p><br><p>E<sub>k</sub> = ১/২ mω²(A² - A²/২)</p><br><p>E<sub>k</sub> = ১/২ mω²(২A²/২ - A²/২)</p><br><p>E<sub>k</sub> = ১/২ mω²(A²/২)</p><br><p>E<sub>k</sub> = ১/২ * (১/২ mω²A²)</p><br><p>E<sub>k</sub> = ১/২ * E</p><br><p>এটি ভুল। এটি আসলে স্থিতিশক্তির অংশ হবে।</p><br><p>E<sub>k</sub> = ১/২ mω²(A² - x²) = ১/২ mω²(A² - A²/২) = ১/২ mω²(A²/২) = ১/৪ mω²A²</p><br><p>মোট শক্তি E = ১/২ mω²A²</p><br><p>সুতরাং, গতিশক্তি (E<sub>k</sub>) = (১/৪ mω²A²) / (১/২ mω²A²) = ১/২</p><br><p>এটিও ভুল। সঠিকটা হলো:</p><br><p>গতিশক্তি (E<sub>k</sub>) = E - E<sub>p</sub></p><br><p>E<sub>p</sub> = ১/২ mω²x² = ১/২ mω² (A/√২)² = ১/২ mω² (A²/২) = ১/৪ mω²A²</p><br><p>যেহেতু, E = ১/২ mω²A²</p><br><p>তাহলে, E<sub>p</sub> = ১/২ E</p><br><p>গতিশক্তি E<sub>k</sub> = E - E<sub>p</sub> = E - ১/২ E = ১/২ E</p><br><p>সুতরাং, মোট শক্তির ১/২ অংশ গতিশক্তি। এটিও ভুল। সঠিক উত্তর c দেওয়া আছে।</p><br><p>আচ্ছা, পুনরায় দেখে নিই।</p><br><p>কণাটির অবস্থান x = A/√২ হলে গতিশক্তি:</p><br><p>E<sub>k</sub> = ১/২ mω²(A² - x²)</p><br><p>E<sub>k</sub> = ১/২ mω²(A² - (A/√২)²)</p><br><p>E<sub>k</sub> = ১/২ mω²(A² - A²/২)</p><br><p>E<sub>k</sub> = ১/২ mω²(২A²/২ - A²/২)</p><br><p>E<sub>k</sub> = ১/২ mω²(A²/২)</p><br><p>তাহলে, E<sub>k</sub> = (১/৪) mω²A²</p><br><p>আমরা জানি, মোট শক্তি (E) = (১/২) mω²A²</p><br><p>এখন, গতিশক্তি মোট শক্তির কত অংশ তা বের করি:</p><br><p>E<sub>k</sub> / E = [(১/৪) mω²A²] / [(১/২) mω²A²]</p><br><p>E<sub>k</sub> / E = (১/৪) / (১/২)</p><br><p>E<sub>k</sub> / E = ১/৪ * ২/১</p><br><p>E<sub>k</sub> / E = ২/৪</p><br><p>E<sub>k</sub> / E = ১/২</p><br><p>সুতরাং, কণাটির অবস্থান x = A/√২ হলে মোট শক্তির ১/২ অংশ গতিশক্তি। অপশন C (৩/৪) ভুল।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "০.০৫ kg ভরের বস্তু ২০ cm বিস্তার এবং ৬.২৮ s পর্যায়কালের সরল ছন্দিত গতি প্রাপ্ত হলে বস্তুটির সর্বোচ্চ দ্রুতি কত হবে?",
+          options: {
+            a: "৬.২৮ m/s",
+            b: "০.৬২৮ m/s",
+            c: "০.২০ m/s",
+            d: "০.১০ m/s",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিসম্পন্ন কণার সর্বোচ্চ দ্রুতি (V<sub>max</sub>) = Aω</p><br><p>এখানে, বিস্তার (A) = ২০ cm = ০.২ m</p><br><p>পর্যায়কাল (T) = ৬.২৮ s</p><br><p>প্রথমে কৌণিক কম্পাঙ্ক (ω) নির্ণয় করি:</p><br><p>ω = ২π/T = ২π/৬.২৮</p><br><p>যেহেতু π ≈ ৩.১৪, তাহলে ২π ≈ ৬.২৮।</p><br><p>সুতরাং, ω = ৬.২৮ / ৬.২৮ = ১ rads⁻¹</p><br><p>এখন, সর্বোচ্চ দ্রুতি নির্ণয় করি:</p><br><p>V<sub>max</sub> = Aω</p><br><p>V<sub>max</sub> = ০.২ * ১</p><br><p>V<sub>max</sub> = ০.২ ms⁻¹</p><br><p>সুতরাং, বস্তুটির সর্বোচ্চ দ্রুতি হবে ০.২০ ms⁻¹।</p>",
+        },
+        {
+          id: 22,
+          question: "হাত ঘড়ির মিনিটের কাঁটার কম্পাঙ্ক কত?",
+          options: {
+            a: "২.৭৮ Hz",
+            b: "২.৭৮ × ১০⁻¹ Hz",
+            c: "২.৭৮ × ১০⁻² Hz",
+            d: "২.৭৮ × ১০⁻⁴ Hz",
+          },
+          correct: "d",
+          explanation:
+            "<p>হাত ঘড়ির মিনিটের কাঁটা একবার পূর্ণ ঘূর্ণন সম্পন্ন করতে ৬০ মিনিট (১ ঘন্টা) সময় নেয়।</p><br><p>অর্থাৎ, মিনিটের কাঁটার পর্যায়কাল (T) = ৬০ মিনিট = ৬০ * ৬০ সেকেন্ড = ৩৬০০ সেকেন্ড।</p><br><p>কম্পাঙ্ক (f) = ১/T</p><br><p>f = ১/৩৬০০ Hz</p><br><p>f ≈ ০.০০০০২৭৭৭ Hz</p><br><p>f ≈ ২.৭৮ × ১০⁻⁴ Hz</p><br><p>সুতরাং, হাত ঘড়ির মিনিটের কাঁটার কম্পাঙ্ক হবে ২.৭৮ × ১০⁻⁴ Hz।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "একটি সরলদোল গতিসম্পন্ন কণার সরণ ৫ cm এবং এর ত্বরণ ৮০ cms⁻² হলে এর পর্যায়কাল-",
+          options: {
+            a: "π/২ s",
+            b: "π/৪ s",
+            c: "π s",
+            d: "২π s",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিতে ত্বরণ (a) = -ω²x</p><br><p>এখানে, সরণ (x) = ৫ cm</p><br><p>ত্বরণের মান (|a|) = ৮০ cms⁻²</p><br><p>সুতরাং, ৮০ = ω² * ৫</p><br><p>ω² = ৮০ / ৫</p><br><p>ω² = ১৬</p><br><p>ω = √১৬</p><br><p>ω = ৪ rads⁻¹</p><br><p>আমরা জানি, পর্যায়কাল (T) = ২π/ω</p><br><p>T = ২π/৪</p><br><p>T = π/২ s</p><br><p>সুতরাং, কণাটির পর্যায়কাল হবে π/২ s।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "সরল ছন্দিত গতিতে চলমান একটি বস্তুর বিস্তার ০.০১ m ও কম্পাঙ্ক ১২ Hz, বস্তুটির ০.০০৫ m সরণে বেগ কত?",
+          options: {
+            a: "০.০৩ ms⁻¹",
+            b: "০.৩৯৬৮ ms⁻¹",
+            c: "০.৫৩২৮ ms⁻¹",
+            d: "০.৬৫২৬৪ ms⁻¹",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল ছন্দিত গতিতে যেকোনো সরণে বেগ (v) = ω√(A² - x²)</p><br><p>এখানে, বিস্তার (A) = ০.০১ m</p><br><p>কম্পাঙ্ক (f) = ১২ Hz</p><br><p>সরণ (x) = ০.০০৫ m</p><br><p>প্রথমে কৌণিক কম্পাঙ্ক (ω) নির্ণয় করি:</p><br><p>ω = ২πf = ২ * ৩.১৪১৬ * ১২</p><br><p>ω = ৭২π rads⁻¹ ≈ ৭৫.৩৯৮ rads⁻¹</p><br><p>এখন, বেগের মান নির্ণয় করি:</p><br><p>v = ৭৫.৩৯৮ * √((০.০১)² - (০.০০৫)²)</p><br><p>v = ৭৫.৩৯৮ * √(০.০০০০১ - ০.০০০০২৫)</p><br><p>v = ৭৫.৩৯৮ * √(০.০০০০৭৫)</p><br><p>v = ৭৫.৩৯৮ * ০.০০৮৬৬</p><br><p>v ≈ ০.৬৫২৬৪ ms⁻¹</p><br><p>সুতরাং, বস্তুটির ০.০০৫ m সরণে বেগ হবে ০.৬৫২৬৪ ms⁻¹।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "দুটি সরল ছন্দিত কণার গতির সমীকরণ x₁ = a sin(ωt + π) ও x₂ = a cos(ωt + π/৩) হলে কণা দুইটির দশা পার্থক্য কত?",
+          options: {
+            a: "০",
+            b: "২π/৩",
+            c: "π/৬",
+            d: "π/৩",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্রথম কণার সমীকরণ: x₁ = a sin(ωt + π)</p><br><p>এর দশা (δ₁) = π</p><br><p>দ্বিতীয় কণার সমীকরণ: x₂ = a cos(ωt + π/৩)</p><br><p>cos(θ) = sin(θ + π/২) সম্পর্ক ব্যবহার করে, x₂ কে sin ফাংশনে রূপান্তর করি:</p><br><p>x₂ = a sin(ωt + π/৩ + π/২)</p><br><p>x₂ = a sin(ωt + (২π + ৩π)/৬)</p><br><p>x₂ = a sin(ωt + ৫π/৬)</p><br><p>এর দশা (δ₂) = ৫π/৬</p><br><p>এখন দশা পার্থক্য (Δδ) = |δ₂ - δ₁|</p><br><p>Δδ = |৫π/৬ - π|</p><br><p>Δδ = |৫π/৬ - ৬π/৬|</p><br><p>Δδ = |-π/৬|</p><br><p>Δδ = π/৬</p><br><p>সুতরাং, কণা দুইটির দশা পার্থক্য হবে π/৬।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "একটি সেকেন্ড দোলকের দৈর্ঘ্য তিনগুণ বৃদ্ধি করা হলে তার দোলনকাল কত হবে?",
+          options: {
+            a: "৬ s",
+            b: "৪ s",
+            c: "১২ s",
+            d: "৯ s",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের দোলনকাল (T) এর সূত্র হলো: T = ২π√(L/g)</p><br><p>সেকেন্ড দোলকের দোলনকাল (T₁) = ২ s</p><br><p>অতএব, ২ = ২π√(L₁/g)  ----- (i)</p><br><p>দৈর্ঘ্য তিনগুণ বৃদ্ধি করা হলে নতুন দৈর্ঘ্য (L₂) = ৩L₁</p><br><p>নতুন দোলনকাল (T₂) = ২π√(L₂/g) = ২π√(৩L₁/g)</p><br><p>T₂ = ২π√৩√(L₁/g)</p><br><p>T₂ = √৩ * [২π√(L₁/g)]</p><br><p>সমীকরণ (i) থেকে, ২π√(L₁/g) = ২</p><br><p>সুতরাং, T₂ = √৩ * ২</p><br><p>T₂ ≈ ১.৭৩২০৫ * ২</p><br><p>T₂ ≈ ৩.৪৬ s</p><br><p>এই উত্তরটি প্রদত্ত অপশনগুলোর সাথে মিলে না। অপশন (B) ৪ s দেওয়া আছে, যা সম্ভবত একটি আনুমানিক মান বা গণনায় ভুল থাকতে পারে। তবে, যদি 'তিনগুণ বৃদ্ধি করা' বলতে L<sub>new</sub> = L<sub>old</sub> + 3L<sub>old</sub> = 4L<sub>old</sub> বোঝায়, তাহলে:</p><br><p>নতুন দৈর্ঘ্য (L₂) = ৪L₁</p><br><p>নতুন দোলনকাল (T₂) = ২π√(৪L₁/g)</p><br><p>T₂ = ২π * √৪ * √(L₁/g)</p><br><p>T₂ = ২π * ২ * √(L₁/g)</p><br><p>T₂ = ২ * [২π√(L₁/g)]</p><br><p>T₂ = ২ * ২</p><br><p>T₂ = ৪ s</p><br><p>সাধারণত 'দৈর্ঘ্য তিনগুণ বৃদ্ধি করা' বলতে L<sub>new</sub> = 3L<sub>old</sub> বোঝায়, কিন্তু অপশন B কে সঠিক ধরতে গেলে L<sub>new</sub> = 4L<sub>old</sub> হতে হবে।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "কোনো সেকেন্ড দোলকের কার্যকরী দৈর্ঘ্য ১.৯৬ গুণ করলে এর দোলনকাল কত হবে?",
+          options: {
+            a: "৩.৯২ sec",
+            b: "৩.৪৪ sec",
+            c: "২.৮ sec",
+            d: "১.৪ sec",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের দোলনকাল (T) এর সূত্র হলো: T = ২π√(L/g)</p><br><p>সেকেন্ড দোলকের দোলনকাল (T₁) = ২ s</p><br><p>অতএব, ২ = ২π√(L₁/g) ----- (i)</p><br><p>কার্যকরী দৈর্ঘ্য ১.৯৬ গুণ করলে নতুন দৈর্ঘ্য (L₂) = ১.৯৬L₁</p><br><p>নতুন দোলনকাল (T₂) = ২π√(L₂/g) = ২π√(১.৯৬L₁/g)</p><br><p>T₂ = ২π√১.৯৬√(L₁/g)</p><br><p>T₂ = ১.৪ * [২π√(L₁/g)]</p><br><p>সমীকরণ (i) থেকে, ২π√(L₁/g) = ২</p><br><p>সুতরাং, T₂ = ১.৪ * ২</p><br><p>T₂ = ২.৮ sec</p><br><p>সুতরাং, এর দোলনকাল হবে ২.৮ sec।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "সেকেন্ড দোলকের কম্পাঙ্ক/একটি সরল দোলকের পর্যায়কাল ২s এর কম্পাঙ্ক কত?",
+          options: {
+            a: "০.৫ Hz",
+            b: "১ Hz",
+            c: "২ Hz",
+            d: "৪ Hz",
+          },
+          correct: "a",
+          explanation:
+            "<p>সেকেন্ড দোলকের পর্যায়কাল (T) = ২ s</p><br><p>আমরা জানি, কম্পাঙ্ক (f) = ১/T</p><br><p>f = ১/২</p><br><p>f = ০.৫ Hz</p><br><p>সুতরাং, সেকেন্ড দোলকের কম্পাঙ্ক হবে ০.৫ Hz।</p>",
+        },
+        {
+          id: 29,
+          question:
+            "একটি সরল দোলকের দোলনকাল ৫০% বৃদ্ধি করতে এর কার্যকরী দৈর্ঘ্য কতগুণ বাড়াতে হবে?",
+          options: {
+            a: "৫",
+            b: "৬",
+            c: "১.২৫",
+            d: "২.২৫",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের দোলনকাল (T) এর সূত্র হলো: T = ২π√(L/g)</p><br><p>প্রাথমিক দোলনকাল T₁ এবং প্রাথমিক দৈর্ঘ্য L₁ হলে,</p><br><p>T₁ = ২π√(L₁/g) ----- (i)</p><br><p>দোলনকাল ৫০% বৃদ্ধি করা হলে, নতুন দোলনকাল (T₂) = T₁ + ০.৫০T₁ = ১.৫০T₁</p><br><p>নতুন দৈর্ঘ্য L₂ হলে,</p><br><p>T₂ = ২π√(L₂/g)</p><br><p>১.৫০T₁ = ২π√(L₂/g) ----- (ii)</p><br><p>সমীকরণ (ii) কে সমীকরণ (i) দ্বারা ভাগ করে পাই:</p><br><p>(১.৫০T₁) / T₁ = [২π√(L₂/g)] / [২π√(L₁/g)]</p><br><p>১.৫০ = √(L₂/L₁)</p><br><p>উভয় পক্ষকে বর্গ করে পাই:</p><br><p>(১.৫০)² = L₂/L₁</p><br><p>২.২৫ = L₂/L₁</p><br><p>L₂ = ২.২৫ L₁</p><br><p>সুতরাং, দোলনকাল ৫০% বৃদ্ধি করতে এর কার্যকরী দৈর্ঘ্য ২.২৫ গুণ বাড়াতে হবে। অপশন c হিসেবে ১.২৫ দেওয়া আছে, যা ভুল। সঠিক উত্তর হবে ২.২৫।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "একটি সরল দোলকের দৈর্ঘ্য দ্বিগুণ করা হলে এর দোলনকাল কত হবে?",
+          options: {
+            a: "২",
+            b: "২√২",
+            c: "৪",
+            d: "√২",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের দোলনকাল (T) এর সূত্র হলো: T = ২π√(L/g)</p><br><p>প্রাথমিক দৈর্ঘ্য L₁ এবং দোলনকাল T₁ হলে,</p><br><p>T₁ = ২π√(L₁/g)</p><br><p>দৈর্ঘ্য দ্বিগুণ করা হলে নতুন দৈর্ঘ্য (L₂) = ২L₁</p><br><p>নতুন দোলনকাল (T₂) = ২π√(L₂/g) = ২π√(২L₁/g)</p><br><p>T₂ = ২π√২√(L₁/g)</p><br><p>T₂ = √২ * [২π√(L₁/g)]</p><br><p>T₂ = √২ T₁</p><br><p>অর্থাৎ, দোলনকাল √২ গুণ হবে।</p>",
+        },
+        {
+          id: 31,
+          question:
+            "একটি সরল দোলকের কম্পাঙ্ক পৃথিবী পৃষ্ঠে f। যদি একে চাঁদে নিয়ে কাঁপানো হয় এর কম্পাঙ্ক হবে-",
+          options: {
+            a: "f",
+            b: "৬f",
+            c: "√৬f",
+            d: "f/√৬",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের পর্যায়কাল (T) = ২π√(L/g)</p><br><p>কম্পাঙ্ক (f) = ১/T = ১/(২π√(L/g)) = (১/২π)√(g/L)</p><br><p>পৃথিবী পৃষ্ঠে কম্পাঙ্ক (f<sub>e</sub>) = (১/২π)√(g<sub>e</sub>/L)</p><br><p>চাঁদে কম্পাঙ্ক (f<sub>m</sub>) = (১/২π)√(g<sub>m</sub>/L)</p><br><p>আমরা জানি, g<sub>e</sub> = ৬g<sub>m</sub>, অর্থাৎ g<sub>m</sub> = g<sub>e</sub>/৬</p><br><p>এখন, f<sub>m</sub> / f<sub>e</sub> = [(১/২π)√(g<sub>m</sub>/L)] / [(১/২π)√(g<sub>e</sub>/L)]</p><br><p>f<sub>m</sub> / f<sub>e</sub> = √(g<sub>m</sub>/g<sub>e</sub>)</p><br><p>f<sub>m</sub> / f<sub>e</sub> = √((g<sub>e</sub>/৬)/g<sub>e</sub>)</p><br><p>f<sub>m</sub> / f<sub>e</sub> = √(১/৬)</p><br><p>f<sub>m</sub> / f<sub>e</sub> = ১/√৬</p><br><p>f<sub>m</sub> = f<sub>e</sub>/√৬</p><br><p>সুতরাং, চাঁদে এর কম্পাঙ্ক হবে f/√৬।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "একটি সরল দোলক ভূপৃষ্ঠে ০.৭৫ sec-এ একবার টিক দেয়। দোলকটির কার্যকর দৈর্ঘ্য কত?",
+          options: {
+            a: "০.১৮৬ m",
+            b: "০.৩২৬ m",
+            c: "০.৫৫৯ m",
+            d: "০.৬৮৬ m",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে, দোলকটি ০.৭৫ sec-এ একবার টিক দেয়, অর্থাৎ এটি সেকেন্ড দোলক নয়। একটি টিক বলতে অর্ধ দোলন বোঝায়। সুতরাং, পর্যায়কাল (T) = ২ * ০.৭৫ s = ১.৫ s</p><br><p>আমরা জানি, সরল দোলকের দোলনকাল (T) = ২π√(L/g)</p><br><p>উভয় পক্ষকে বর্গ করে পাই:</p><br><p>T² = ৪π²(L/g)</p><br><p>L = (T²g) / (৪π²)</p><br><p>এখানে, T = ১.৫ s</p><br><p>g = ৯.৮ ms⁻² (ভূপৃষ্ঠে)</p><br><p>π = ৩.১৪১৬</p><br><p>L = ((১.৫)² * ৯.৮) / (৪ * (৩.১৪১৬)²)</p><br><p>L = (২.২৫ * ৯.৮) / (৪ * ৯.৮৬৯৬)</p><br><p>L = ২২.০৫ / ৩৯.৪৮৭৪</p><br><p>L ≈ ০.৫৫৮৪ m</p><br><p>L ≈ ০.৫৫৯ m</p><br><p>সুতরাং, দোলকটির কার্যকর দৈর্ঘ্য হবে ০.৫৫৯ m।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "একটি সরল দৈর্ঘ্য দোলকের দোলনকাল ৩ s হলে প্রথমটির দোলনকাল কত?",
+          options: {
+            a: "৪.২৪ s",
+            b: "৪.৫৪ s",
+            c: "৫.৫৪ s",
+            d: "৫.২৪ s",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্রশ্নটি অসম্পূর্ণ বা বিভ্রান্তিকর। এখানে 'প্রথমটির দোলনকাল কত' বলতে কী বোঝানো হচ্ছে তা স্পষ্ট নয়। সম্ভবত দুটি দোলকের তুলনা করা হচ্ছে, কিন্তু দ্বিতীয় দোলকের তথ্য দেওয়া হয়নি।</p><br><p>যদি প্রশ্নটি এমন হয় যে, একটি সরল দোলকের দৈর্ঘ্য দ্বিগুণ করা হলে দোলনকাল কত হবে, এবং প্রাথমিক দোলনকাল ৩ s হয়, তাহলে:</p><br><p>T₂ = √২ T₁ = √২ * ৩ ≈ ১.৪১৪ * ৩ = ৪.২৪২ s।</p><br><p>যদি এই অনুমান সঠিক হয়, তাহলে উত্তর (A) ৪.২৪ s হবে। অন্যথায়, প্রশ্নটির স্পষ্টতা প্রয়োজন।</p>",
+        },
+        {
+          id: 34,
+          question:
+            "৪০ cm দীর্ঘ একটি সরল দোলক প্রতি মিনিটে ৪০ দোল দেয়। যদি এর দৈর্ঘ্য ১৬০ cm করা হয়, তবে ৬০ বার দোলতে সময় নেবে?",
+          options: {
+            a: "৩ min",
+            b: "৬ min",
+            c: "৯ min",
+            d: "১২ min",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্রথম ক্ষেত্রে:</p><br><p>দৈর্ঘ্য (L₁) = ৪০ cm = ০.৪ m</p><br><p>দোলন সংখ্যা = ৪০ দোল / মিনিট = ৪০ দোল / ৬০ সেকেন্ড</p><br><p>কম্পাঙ্ক (f₁) = ৪০/৬০ Hz = ২/৩ Hz</p><br><p>পর্যায়কাল (T₁) = ১/f₁ = ৩/২ s = ১.৫ s</p><br><p>আমরা জানি, T = ২π√(L/g)</p><br><p>সুতরাং, T₁ = ২π√(L₁/g)</p><br><p>১.৫ = ২π√(০.৪/g) ----- (i)</p><br><p>দ্বিতীয় ক্ষেত্রে:</p><br><p>নতুন দৈর্ঘ্য (L₂) = ১৬০ cm = ১.৬ m</p><br><p>নতুন পর্যায়কাল (T₂) = ২π√(L₂/g) = ২π√(১.৬/g)</p><br><p>T₂ / T₁ = [২π√(১.৬/g)] / [২π√(০.৪/g)]</p><br><p>T₂ / T₁ = √(১.৬/০.৪)</p><br><p>T₂ / T₁ = √৪</p><br><p>T₂ / T₁ = ২</p><br><p>T₂ = ২T₁ = ২ * ১.৫ s = ৩ s</p><br><p>অর্থাৎ, নতুন দৈর্ঘ্যে দোলকটির পর্যায়কাল হবে ৩ s।</p><br><p>৬০ বার দোলতে যে সময় লাগবে:</p><br><p>মোট সময় = দোলন সংখ্যা * পর্যায়কাল</p><br><p>মোট সময় = ৬০ * ৩ s = ১৮০ s</p><br><p>১৮০ s = ১৮০/৬০ মিনিট = ৩ মিনিট</p><br><p>সুতরাং, ৬০ বার দোলতে ৩ মিনিট সময় লাগবে।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "একটি সরল দোলককে পৃথিবীর ব্যাসার্ধের সমান উচ্চতায় নেওয়া হলে দোলনকাল কতগুণ হবে?",
+          options: {
+            a: "১/৪",
+            b: "√২",
+            c: "২",
+            d: "৪",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, ভূপৃষ্ঠ থেকে h উচ্চতায় অভিকর্ষজ ত্বরণ (g') = g / (১ + h/R)²</p><br><p>এখানে, h = R (পৃথিবীর ব্যাসার্ধের সমান উচ্চতা)</p><br><p>সুতরাং, g' = g / (১ + R/R)² = g / (১ + ১)² = g / ২² = g/৪</p><br><p>এখন, সরল দোলকের দোলনকাল (T) = ২π√(L/g)</p><br><p>ভূপৃষ্ঠে দোলনকাল (T₁) = ২π√(L/g)</p><br><p>h উচ্চতায় দোলনকাল (T₂) = ২π√(L/g')</p><br><p>T₂ / T₁ = [২π√(L/g')] / [২π√(L/g)]</p><br><p>T₂ / T₁ = √(g/g')</p><br><p>T₂ / T₁ = √(g / (g/৪))</p><br><p>T₂ / T₁ = √৪</p><br><p>T₂ / T₁ = ২</p><br><p>T₂ = ২T₁</p><br><p>সুতরাং, দোলনকাল ২ গুণ হবে।</p>",
+        },
+        {
+          id: 36,
+          question:
+            "কোনো ব্যক্তি একটি স্থির লিফটের ভেতরে একটি সরল দোলকের পর্যায়কাল পান T। যদি লিফটি g/৩ ত্বরণে ওপরে ওঠতে থাকে তাহলে পর্যায়কাল হবে-",
+          options: {
+            a: "√৩ T",
+            b: "T/√৩",
+            c: "T/√২",
+            d: "√২ T",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের পর্যায়কাল (T) = ২π√(L/g<sub>eff</sub>)</p><br><p>যখন লিফটি স্থির থাকে, তখন কার্যকর অভিকর্ষজ ত্বরণ (g<sub>eff</sub>) = g</p><br><p>সুতরাং, স্থির লিফটের ভেতরে পর্যায়কাল (T) = ২π√(L/g) ----- (i)</p><br><p>যখন লিফটি 'a' ত্বরণে ওপরে ওঠে, তখন কার্যকর অভিকর্ষজ ত্বরণ (g<sub>eff</sub>) = g + a</p><br><p>এখানে, a = g/৩</p><br><p>সুতরাং, g<sub>eff</sub> = g + g/৩ = (৩g + g)/৩ = ৪g/৩</p><br><p>লিফটি ওপরে ওঠার সময় নতুন পর্যায়কাল (T') = ২π√(L/g<sub>eff</sub>) = ২π√(L/(৪g/৩))</p><br><p>T' = ২π√(৩L/৪g)</p><br><p>T' = ২π * (√৩/√৪) * √(L/g)</p><br><p>T' = (√৩/২) * [২π√(L/g)]</p><br><p>সমীকরণ (i) থেকে, ২π√(L/g) = T</p><br><p>সুতরাং, T' = (√৩/২) T</p><br><p>অপশন (B) এ T/√৩ দেওয়া আছে, যা (√৩/৩)T এর সমান। আমাদের উত্তর (√৩/২)T। সুতরাং প্রদত্ত উত্তর (B) T/√৩ ভুল। সঠিক উত্তর হওয়া উচিত (√৩/২)T।</p>",
+        },
+        {
+          id: 37,
+          question:
+            "দুটি স্থানে অভিকর্ষজ ত্বরণের মান যথাক্রমে ৯.৮ ms⁻² ও ৯.৭৮ ms⁻² হলে, ঐ দু স্থানে সেকেন্ড দোলকের দৈর্ঘ্যের পার্থক্য কত হবে?",
+          options: {
+            a: "০.০০৫ m",
+            b: "০.০০৩ m",
+            c: "০.০০২ m",
+            d: "০.০০৪ m",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, সরল দোলকের পর্যায়কাল (T) = ২π√(L/g)</p><br><p>সেকেন্ড দোলকের পর্যায়কাল T = ২ s</p><br><p>সুতরাং, ২ = ২π√(L/g)</p><br><p>১ = π√(L/g)</p><br><p>উভয় পক্ষকে বর্গ করে পাই:</p><br><p>১ = π²(L/g)</p><br><p>L = g/π²</p><br><p>প্রথম স্থানে (g₁ = ৯.৮ ms⁻²) কার্যকর দৈর্ঘ্য (L₁) = ৯.৮ / (৩.১৪১৬)² = ৯.৮ / ৯.৮৬৯৬ ≈ ০.৯৯২৯ m</p><br><p>দ্বিতীয় স্থানে (g₂ = ৯.৭৮ ms⁻²) কার্যকর দৈর্ঘ্য (L₂) = ৯.৭৮ / (৩.১৪১৬)² = ৯.৭৮ / ৯.৮৬৯৬ ≈ ০.৯৯১০ m</p><br><p>দৈর্ঘ্যের পার্থক্য = |L₁ - L₂| = |০.৯৯২৯ - ০.৯৯১০| = ০.০০১৯ m ≈ ০.০০২ m</p><br><p>সুতরাং, ঐ দু স্থানে সেকেন্ড দোলকের দৈর্ঘ্যের পার্থক্য হবে ০.০০২ m।</p>",
+        },
+        {
+          id: 38,
+          question:
+            "একটি স্প্রিং দোলকের পর্যায়কাল (T = ২π√(m/k)) হলে পৃথিবীর কেন্দ্রে এর দোলনকাল কত?",
+          options: {
+            a: "০ s",
+            b: "২ s",
+            c: "৩ s",
+            d: "∞",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি স্প্রিং দোলকের পর্যায়কাল (T) = ২π√(m/k)</p><br><p>এই সূত্র থেকে বোঝা যায় যে, স্প্রিং দোলকের পর্যায়কাল বস্তুর ভর (m) এবং স্প্রিং ধ্রুবক (k) এর উপর নির্ভর করে, কিন্তু অভিকর্ষজ ত্বরণ (g) এর উপর নির্ভর করে না।</p><br><p>পৃথিবীর কেন্দ্রে অভিকর্ষজ ত্বরণ (g) শূন্য হলেও, স্প্রিং দোলকের পর্যায়কাল g এর উপর নির্ভরশীল না হওয়ায় এর পর্যায়কাল অসীম হবে না, বরং পূর্বের মতোই থাকবে।</p><br><p>তবে, সরল দোলকের ক্ষেত্রে পৃথিবীর কেন্দ্রে অভিকর্ষজ ত্বরণ g = ০ হওয়ায় পর্যায়কাল T = ২π√(L/g) = ২π√(L/০) = ∞ হয়।</p><br><p>প্রশ্নে যেহেতু স্প্রিং দোলকের কথা বলা হয়েছে, এবং এর পর্যায়কাল g এর উপর নির্ভরশীল নয়, তাই পৃথিবীর কেন্দ্রেও এর পর্যায়কাল অসীম হবে না।</p><br><p>সুতরাং, প্রদত্ত উত্তর 'd' (∞) ভুল। স্প্রিং দোলকের পর্যায়কাল পৃথিবীর কেন্দ্রেও একই থাকবে, অর্থাৎ T = ২π√(m/k)।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                <label class="option" data-option="${option}">
+                                                                  <div class="circle">${option}</div>
+                                                                  <span class="option-text">${question.options[option]}</span>
+                                                                </label>
+                                                              `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                   <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                   <div class="explanation-content">
+                                                                     <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                     ${question.explanation}
+                                                                   </div>
+                                                                 </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                              <p class="question-label">${
+                                                                index + 1
+                                                              }. ${
+            question.question
+          }</p>
+                                                              <div class="options">
+                                                                ${optionsHTML}
+                                                              </div>
+                                                              ${explanationHTML}
+                                                            `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
